@@ -8,8 +8,11 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class ToDoListViewController: SwipeTableViewController{
+    
+    @IBOutlet weak var searchBar: UISearchBar!
     
     var todoItems: Results<Item>?
     
@@ -23,17 +26,53 @@ class ToDoListViewController: SwipeTableViewController{
     
     override func viewDidLoad() {
         super.viewDidLoad()
-     
+        tableView.separatorStyle = .none
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        guard let colorHex = selectedCategory?.cellColor else { fatalError() }
+            
+            title = selectedCategory!.name
+        
+        updateNavBar(withHexCode: colorHex)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        updateNavBar(withHexCode: "9BDAFA")
+    }
+    
+    //MARK: - Nav bar setup Methods
+    
+    func updateNavBar (withHexCode hexCode: String) {
+        guard let navBar = navigationController?.navigationBar else { fatalError("Navigation controller does not exist.")}
+        guard let navbarColor = UIColor(hexString: hexCode) else { fatalError() }
+        
+        navBar.tintColor = ContrastColorOf(navbarColor, returnFlat: true)
+        
+        searchBar.barTintColor = navbarColor
+        
+        navBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor : ContrastColorOf(navbarColor, returnFlat: true)]
+        
+        navBar.barTintColor = navbarColor
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell  = super.tableView(tableView, cellForRowAt: indexPath)
         if let item = todoItems?[indexPath.row] {
-        cell.textLabel?.text = item.title
-        
-        cell.accessoryType = item.done ? .checkmark : .none
-        } else {
-            cell.textLabel?.text = "No items added"
+            cell.textLabel?.text = item.title
+            
+            let colorValue =  UIColor(hexString: selectedCategory!.cellColor)
+            if let color = colorValue?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count)) {
+
+                cell.backgroundColor = color
+                cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+
+            }
+            
+            
+            cell.accessoryType = item.done ? .checkmark : .none
+            } else {
+                cell.textLabel?.text = "No items added"
         }
         
         return cell
